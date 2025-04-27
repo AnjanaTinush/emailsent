@@ -23,6 +23,7 @@ import CheckoutDetails from "./pages/payment management/CheckoutDetails.jsx";
 import ViewFeedback from "./pages/feedback management/ViewFeedback.jsx";
 import ProductView from "./pages/ProductView.jsx";
 import Footer from "./component/Footer.jsx";
+import SummarySection from "./pages/payment management/SummarySection.jsx";
 
 export default function App() {
   return (
@@ -117,6 +118,7 @@ function AppContent() {
           <Route path="/checkoutdetails/:checkoutId" element={<CheckoutDetails />} />
 
           <Route path="/viewfeedback" element={<ViewFeedback />} />
+          <Route path="/checkoutsummary" element={<SummarySection />} />
         </Route>
 
         {/* Protected routes for users */}

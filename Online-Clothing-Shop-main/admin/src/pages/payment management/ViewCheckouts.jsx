@@ -9,6 +9,7 @@ export default function ViewCheckouts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusUpdateMessage, setStatusUpdateMessage] = useState("");
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -98,8 +99,27 @@ export default function ViewCheckouts() {
   }, []);
 
   // Handle status update
-  const handleStatusUpdate = async (checkoutId, status) => {
+  const handleStatusUpdate = async (checkoutId, status, previousStatus) => {
     try {
+      // If status is changing to "Refund", show confirmation dialog
+      if (status === "Refund" && previousStatus !== "Refund") {
+        const confirmRefund = window.confirm(
+          "Are you sure you want to process a refund for this order? An email notification will be sent to the customer."
+        );
+        
+        if (!confirmRefund) {
+          // Reset the select dropdown to previous value if user cancels
+          setCheckouts((prevCheckouts) =>
+            prevCheckouts.map((checkout) =>
+              checkout._id === checkoutId
+                ? { ...checkout, status: previousStatus }
+                : checkout
+            )
+          );
+          return;
+        }
+      }
+
       const response = await fetch(`/api/checkout/${checkoutId}/status`, {
         method: "PATCH",
         headers: {
@@ -121,16 +141,40 @@ export default function ViewCheckouts() {
         )
       );
 
-      alert("Status updated successfully!");
+      // Show appropriate message based on status
+      if (status === "Refund") {
+        setStatusUpdateMessage(`Refund processed successfully! Email notification sent to customer.`);
+      } else {
+        setStatusUpdateMessage("Status updated successfully!");
+      }
+      
+      // Clear the message after 5 seconds
+      setTimeout(() => {
+        setStatusUpdateMessage("");
+      }, 5000);
+      
     } catch (error) {
       console.error("Error updating status:", error);
-      alert("Failed to update status");
+      setStatusUpdateMessage(`Error: ${error.message}`);
+      
+      // Clear the error message after 5 seconds
+      setTimeout(() => {
+        setStatusUpdateMessage("");
+      }, 5000);
     }
   };
 
   // Handle checkout deletion
   const handleDeleteCheckout = async (checkoutId) => {
     try {
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete this checkout record? This action cannot be undone."
+      );
+      
+      if (!confirmDelete) {
+        return;
+      }
+      
       const response = await fetch(`/api/checkout/${checkoutId}`, {
         method: "DELETE",
       });
@@ -144,10 +188,21 @@ export default function ViewCheckouts() {
         prevCheckouts.filter((checkout) => checkout._id !== checkoutId)
       );
 
-      alert("Checkout deleted successfully!");
+      setStatusUpdateMessage("Checkout deleted successfully!");
+      
+      // Clear the message after 5 seconds
+      setTimeout(() => {
+        setStatusUpdateMessage("");
+      }, 5000);
+      
     } catch (error) {
       console.error("Error deleting checkout:", error);
-      alert("Failed to delete checkout");
+      setStatusUpdateMessage(`Error: ${error.message}`);
+      
+      // Clear the error message after 5 seconds
+      setTimeout(() => {
+        setStatusUpdateMessage("");
+      }, 5000);
     }
   };
 
@@ -207,6 +262,17 @@ export default function ViewCheckouts() {
             </div>
           </div>
 
+          {/* Status Update Message */}
+          {statusUpdateMessage && (
+            <div className={`px-4 py-3 rounded-lg ${statusUpdateMessage.includes("Error") 
+              ? "bg-red-100 text-red-800 border border-red-300" 
+              : statusUpdateMessage.includes("Refund") 
+                ? "bg-blue-100 text-blue-800 border border-blue-300"
+                : "bg-green-100 text-green-800 border border-green-300"}`}>
+              {statusUpdateMessage}
+            </div>
+          )}
+
           {/* Search Bar and Generate Report Button */}
           <div className="flex items-center gap-4">
             <input
@@ -222,6 +288,13 @@ export default function ViewCheckouts() {
             >
               Generate Report
             </button>
+            <Link to="/checkoutsummary">
+              <button
+                className="bg-[#660708] text-[#F5F3F4] px-6 py-2 rounded-lg hover:bg-[#7A0B0B] focus:outline-none focus:ring-2 focus:ring-[#660708] focus:ring-offset-2 transition-all whitespace-nowrap"
+              >
+                Summary section
+              </button>
+            </Link>
           </div>
         </div>
 
@@ -283,12 +356,14 @@ export default function ViewCheckouts() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#161A1D]">
                       <select
                         value={checkout.status}
-                        onChange={(e) => handleStatusUpdate(checkout._id, e.target.value)}
+                        onChange={(e) => handleStatusUpdate(checkout._id, e.target.value, checkout.status)}
                         className={`px-2 py-1 rounded-full text-sm ${
                           checkout.status === "Delivered"
                             ? "bg-green-100 text-green-800"
                             : checkout.status === "Cancelled"
                             ? "bg-red-100 text-red-800"
+                            : checkout.status === "Refund"
+                            ? "bg-blue-100 text-blue-800"
                             : "bg-yellow-100 text-yellow-800"
                         }`}
                       >
