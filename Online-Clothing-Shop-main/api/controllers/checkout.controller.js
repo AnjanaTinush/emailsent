@@ -14,14 +14,12 @@ const transporter = nodemailer.createTransport({
 
 export const createCheckout = async (req, res) => {
   try {
-    const { userId, address, phoneNumber, email, items, totalPrice } = req.body;
+    const { userId, email, items, totalPrice } = req.body;
     const receipt = req.file ? path.basename(req.file.path) : null;
 
     // Create a new checkout
     const checkout = new Checkout({
       userId,
-      address,
-      phoneNumber,
       email,
       receipt,
       items: JSON.parse(items),

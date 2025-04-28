@@ -7,14 +7,6 @@ const checkoutSchema = new mongoose.Schema(
       ref: "User",
       required: true,
     },
-    address: {
-      type: String,
-      required: true,
-    },
-    phoneNumber: {
-      type: String,
-      required: true,
-    },
     email: {
       type: String,
       required: true,
