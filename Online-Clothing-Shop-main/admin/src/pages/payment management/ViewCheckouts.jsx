@@ -172,10 +172,31 @@ const generateReport = () => {
   // Handle status update
   const handleStatusUpdate = async (checkoutId, status, previousStatus) => {
     try {
+      // If the previous status is already "Refund", don't allow any changes
+      if (previousStatus === "Refund") {
+        setStatusUpdateMessage("Error: Orders with Refund status cannot be modified.");
+        
+        // Reset the select dropdown to previous value
+        setCheckouts((prevCheckouts) =>
+          prevCheckouts.map((checkout) =>
+            checkout._id === checkoutId
+              ? { ...checkout, status: previousStatus }
+              : checkout
+          )
+        );
+        
+        // Clear the message after 5 seconds
+        setTimeout(() => {
+          setStatusUpdateMessage("");
+        }, 5000);
+        
+        return;
+      }
+
       // If status is changing to "Refund", show confirmation dialog
       if (status === "Refund" && previousStatus !== "Refund") {
         const confirmRefund = window.confirm(
-          "Are you sure you want to process a refund for this order? An email notification will be sent to the customer."
+          "Are you sure you want to process a refund for this order? An email notification will be sent to the customer. This action cannot be undone."
         );
         
         if (!confirmRefund) {
@@ -214,7 +235,7 @@ const generateReport = () => {
 
       // Show appropriate message based on status
       if (status === "Refund") {
-        setStatusUpdateMessage(`Refund processed successfully! Email notification sent to customer.`);
+        setStatusUpdateMessage(`Refund processed successfully! Email notification sent to customer. Status is now locked.`);
       } else {
         setStatusUpdateMessage("Status updated successfully!");
       }
@@ -227,6 +248,15 @@ const generateReport = () => {
     } catch (error) {
       console.error("Error updating status:", error);
       setStatusUpdateMessage(`Error: ${error.message}`);
+      
+      // Reset the select dropdown to previous value on error
+      setCheckouts((prevCheckouts) =>
+        prevCheckouts.map((checkout) =>
+          checkout._id === checkoutId
+            ? { ...checkout, status: previousStatus }
+            : checkout
+        )
+      );
       
       // Clear the error message after 5 seconds
       setTimeout(() => {
@@ -359,13 +389,13 @@ const generateReport = () => {
             >
               Generate Report
             </button>
-            <Link to="/checkoutsummary">
+            {/* <Link to="/checkoutsummary">
               <button
                 className="bg-[#660708] text-[#F5F3F4] px-6 py-2 rounded-lg hover:bg-[#7A0B0B] focus:outline-none focus:ring-2 focus:ring-[#660708] focus:ring-offset-2 transition-all whitespace-nowrap"
               >
                 Summary section
               </button>
-            </Link>
+            </Link> */}
           </div>
         </div>
 
@@ -411,26 +441,34 @@ const generateReport = () => {
                       ${checkout.totalPrice}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#161A1D]">
-                      <select
-                        value={checkout.status}
-                        onChange={(e) => handleStatusUpdate(checkout._id, e.target.value, checkout.status)}
-                        className={`px-2 py-1 rounded-full text-sm ${
-                          checkout.status === "Delivered"
-                            ? "bg-green-100 text-green-800"
-                            : checkout.status === "Cancelled"
-                            ? "bg-red-100 text-red-800"
-                            : checkout.status === "Refund"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Processing">Processing</option>
-                        <option value="Shipped">Shipped</option>
-                        <option value="Delivered">Delivered</option>
-                        <option value="Cancelled">Cancelled</option>
-                        <option value="Refund">Refund</option>
-                      </select>
+                      {checkout.status === "Refund" ? (
+                        <div className="px-2 py-1 rounded-full text-sm bg-blue-100 text-blue-800 border border-blue-300">
+                          {checkout.status} <span className="text-xs">(Locked)</span>
+                        </div>
+                      ) : (
+                        <select
+                          value={checkout.status}
+                          onChange={(e) => handleStatusUpdate(checkout._id, e.target.value, checkout.status)}
+                          className={`px-2 py-1 rounded-full text-sm ${
+                            checkout.status === "Delivered"
+                              ? "bg-green-100 text-green-800"
+                              : checkout.status === "Cancelled"
+                              ? "bg-red-100 text-red-800"
+                              : checkout.status === "Processing"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : checkout.status === "Shipped"
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          <option value="Pending">Pending</option>
+                          <option value="Processing">Processing</option>
+                          <option value="Shipped">Shipped</option>
+                          <option value="Delivered">Delivered</option>
+                          <option value="Cancelled">Cancelled</option>
+                          <option value="Refund">Refund</option>
+                        </select>
+                      )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#161A1D]">
                       {new Date(checkout.createdAt).toLocaleDateString()}

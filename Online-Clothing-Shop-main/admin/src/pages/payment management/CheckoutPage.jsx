@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
 export default function CheckoutPage() {
-  const { id } = useParams(); // Get userId from the URL
+  const { id } = useParams();
   const [cart, setCart] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -12,11 +12,9 @@ export default function CheckoutPage() {
   const [email, setEmail] = useState("");
   const [receipt, setReceipt] = useState(null);
 
-  // Fetch cart and user details
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch cart details
         const cartResponse = await fetch(`/api/cart/getcart/${id}`);
         if (!cartResponse.ok) {
           throw new Error("Failed to fetch cart");
@@ -24,7 +22,6 @@ export default function CheckoutPage() {
         const cartData = await cartResponse.json();
         setCart(cartData);
 
-        // Fetch user details
         const userResponse = await fetch(`/api/users/user/${id}`);
         if (!userResponse.ok) {
           throw new Error("Failed to fetch user details");
@@ -32,7 +29,6 @@ export default function CheckoutPage() {
         const userData = await userResponse.json();
         setUser(userData);
 
-        // Pre-fill email and phone number
         setEmail(userData.email);
         setAddress(userData.address || "");
         setPhoneNumber(userData.mobile || "");
@@ -46,7 +42,6 @@ export default function CheckoutPage() {
     fetchData();
   }, [id]);
 
-  // Handle receipt upload
   const handleReceiptUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -54,24 +49,21 @@ export default function CheckoutPage() {
     }
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      // Create form data
       const formData = new FormData();
       formData.append("userId", id);
       formData.append("address", address);
       formData.append("phoneNumber", mobile);
       formData.append("email", email);
-      formData.append("items", JSON.stringify(cart.items)); // Add cart items
-      formData.append("totalPrice", cart.totalPrice); // Add total price
+      formData.append("items", JSON.stringify(cart.items));
+      formData.append("totalPrice", cart.totalPrice);
       if (receipt) {
         formData.append("receipt", receipt);
       }
 
-      // Submit the form data to create a checkout
       const response = await fetch("/api/checkout/checkout", {
         method: "POST",
         body: formData,
@@ -118,9 +110,7 @@ export default function CheckoutPage() {
     <div className="p-8 bg-[#F5F3F4] min-h-screen">
       <h1 className="text-4xl font-extrabold text-center text-[#161A1D] mb-10">Checkout</h1>
 
-      {/* Main Checkout Layout */}
       <div className="flex flex-col lg:flex-row gap-8">
-        {/* Left Section: Cart Items */}
         <div className="lg:w-2/3">
           <h2 className="text-2xl font-semibold text-[#161A1D] mb-6">Cart Items</h2>
           <div className="space-y-4">
@@ -139,38 +129,36 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Right Section: Total Price and Checkout Form */}
         <div className="lg:w-1/3">
           <div className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out mb-8">
             <p className="text-2xl font-semibold text-[#161A1D] mb-4">
               Total: ${cart.totalPrice}
             </p>
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Address Section */}
+              
+              {/* Address Section (Read-Only) */}
               <div>
                 <label className="block text-sm font-medium text-[#161A1D]">Address</label>
                 <input
                   type="text"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 border border-[#660708] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#660708] focus:border-[#660708]"
+                  readOnly
+                  className="w-full px-4 py-2 bg-gray-100 border border-[#660708] rounded-md shadow-sm focus:outline-none"
                 />
               </div>
 
-              {/* Phone Number Section */}
+              {/* Phone Number Section (Read-Only) */}
               <div>
                 <label className="block text-sm font-medium text-[#161A1D]">Phone Number</label>
                 <input
                   type="tel"
                   value={mobile}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  required
-                  className="w-full px-4 py-2 border border-[#660708] rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-[#660708] focus:border-[#660708]"
+                  readOnly
+                  className="w-full px-4 py-2 bg-gray-100 border border-[#660708] rounded-md shadow-sm focus:outline-none"
                 />
               </div>
 
-              {/* Email Section */}
+              {/* Email Section (Editable) */}
               <div>
                 <label className="block text-sm font-medium text-[#161A1D]">Email</label>
                 <input
@@ -201,6 +189,7 @@ export default function CheckoutPage() {
                   Place Order
                 </button>
               </div>
+
             </form>
           </div>
         </div>

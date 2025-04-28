@@ -67,7 +67,7 @@ export default function EmployeeDashboard() {
           {/* Payment Management Card */}
           <div
             className="bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out cursor-pointer"
-            onClick={() => navigate("/viewcheckouts")}
+            onClick={() => navigate("/checkoutsummary")}
           >
             <h2 className="text-xl font-bold text-[#161A1D] mb-4">Payment Management</h2>
             <p className="text-[#660708]">Manage payment details and transactions.</p>
