@@ -27,56 +27,127 @@ export default function ViewCheckouts() {
     checkout.status?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Add generate report function
-  const generateReport = () => {
-    const doc = new jsPDF();
+const generateReport = () => {
+  const doc = new jsPDF();
+  
+  // Add title
+  doc.setFontSize(18);
+  doc.setTextColor(102, 7, 8); // #660708 color for title
+  doc.text('Checkouts Report', 14, 20);
+  
+  // Add current date
+  doc.setFontSize(11);
+  doc.setTextColor(0, 0, 0); // Reset to black
+  doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+  
+  // Define column positions and widths
+  const columns = [
+    { header: 'User', x: 14, width: 40 },
+    { header: 'Email', x: 54, width: 60 },
+    { header: 'Total Price', x: 114, width: 30 },
+    { header: 'Status', x: 144, width: 30 },
+    { header: 'Date', x: 174, width: 30 }
+  ];
+  
+  let yPos = 40;
+  
+  // Set font size for table and header color
+  doc.setFontSize(10);
+  doc.setTextColor(102, 7, 8); // #660708 color for table headers
+  doc.setFont(undefined, 'bold');
+  
+  // Add headers
+  columns.forEach(column => {
+    doc.text(column.header, column.x, yPos);
+  });
+  
+  // Add horizontal line
+  yPos += 2;
+  doc.setDrawColor(102, 7, 8); // #660708 color for the line
+  doc.line(14, yPos, 196, yPos);
+  yPos += 6;
+  
+  // Reset to normal font for table data
+  doc.setFont(undefined, 'normal');
+  doc.setTextColor(0, 0, 0); // Reset to black for data
+  
+  // Add checkout data
+  filteredCheckouts.forEach((checkout) => {
+    // Check if we need a new page
+    if (yPos > 280) {
+      doc.addPage();
+      yPos = 20;
+      
+      // Add headers on new page
+      doc.setTextColor(102, 7, 8);
+      doc.setFont(undefined, 'bold');
+      columns.forEach(column => {
+        doc.text(column.header, column.x, yPos);
+      });
+      
+      // Add horizontal line
+      yPos += 2;
+      doc.setDrawColor(102, 7, 8);
+      doc.line(14, yPos, 196, yPos);
+      yPos += 6;
+      
+      // Reset to normal font for table data
+      doc.setFont(undefined, 'normal');
+      doc.setTextColor(0, 0, 0);
+    }
     
-    // Add title
-    doc.setFontSize(18);
-    doc.text('Checkouts Report', 14, 20);
+    // User
+    doc.text(truncateText(checkout.userId?.username || 'N/A', 18), columns[0].x, yPos);
     
-    // Add current date
-    doc.setFontSize(11);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30);
+    // Email
+    doc.text(truncateText(checkout.email || '', 25), columns[1].x, yPos);
     
-    // Table headers
-    const headers = ['User', 'Email', 'Phone', 'Total Price', 'Status', 'Date'];
-    let yPos = 40;
+    // Total Price
+    doc.text(`$${checkout.totalPrice}` || '', columns[2].x, yPos);
     
-    // Set font size for table
-    doc.setFontSize(10);
+    // Set status color based on value
+    let statusColor;
+    switch(checkout.status) {
+      case 'Delivered':
+        statusColor = [34, 197, 94]; // green
+        break;
+      case 'Cancelled':
+        statusColor = [220, 38, 38]; // red
+        break;
+      case 'Refund':
+        statusColor = [59, 130, 246]; // blue
+        break;
+      case 'Processing':
+        statusColor = [234, 179, 8]; // yellow/amber
+        break;
+      case 'Shipped':
+        statusColor = [245, 158, 11]; // orange
+        break;
+      case 'Pending':
+        statusColor = [156, 163, 175]; // gray
+        break;
+      default:
+        statusColor = [0, 0, 0]; // black
+    }
     
-    // Add headers
-    headers.forEach((header, i) => {
-      doc.text(header, 14 + (i * 32), yPos);
-    });
+    // Apply color for status
+    doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+    doc.text(checkout.status || '', columns[3].x, yPos);
     
-    // Add horizontal line
-    yPos += 2;
+    // Reset to black for date
+    doc.setTextColor(0, 0, 0);
+    doc.text(new Date(checkout.createdAt).toLocaleDateString() || '', columns[4].x, yPos);
+    
+    // Add a light gray separator line between rows
+    yPos += 1;
+    doc.setDrawColor(230, 230, 230);
     doc.line(14, yPos, 196, yPos);
     yPos += 6;
-    
-    // Add checkout data
-    filteredCheckouts.forEach((checkout) => {
-      // Check if we need a new page
-      if (yPos > 280) {
-        doc.addPage();
-        yPos = 20;
-      }
-      
-      doc.text(checkout.userId?.username || 'N/A', 14, yPos);
-      doc.text(checkout.email || '', 46, yPos);
-      doc.text(checkout.phoneNumber || '', 78, yPos);
-      doc.text(`$${checkout.totalPrice}` || '', 110, yPos);
-      doc.text(checkout.status || '', 142, yPos);
-      doc.text(new Date(checkout.createdAt).toLocaleDateString() || '', 174, yPos);
-      
-      yPos += 7;
-    });
-    
-    // Save the PDF
-    doc.save('checkouts-report.pdf');
-  };
+  });
+  
+  // Save the PDF
+  doc.save('checkouts-report.pdf');
+};
 
   // Fetch all checkouts
   useEffect(() => {
@@ -310,12 +381,6 @@ export default function ViewCheckouts() {
                   Email
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-[#F5F3F4] uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-[#F5F3F4] uppercase tracking-wider">
-                  Address
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-[#F5F3F4] uppercase tracking-wider">
                   Total Price
                 </th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-[#F5F3F4] uppercase tracking-wider">
@@ -341,14 +406,6 @@ export default function ViewCheckouts() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#161A1D]">
                       {checkout.email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#161A1D]">
-                      {checkout.phoneNumber}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-[#161A1D]">
-                      <span title={checkout.address}>
-                        {truncateText(checkout.address, 20)}
-                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-[#161A1D]">
                       ${checkout.totalPrice}
